@@ -28,7 +28,7 @@ export default defineConfig(async () => {
     },
     root: path.resolve(process.cwd(), "client"),
     build: {
-      outDir: path.resolve(process.cwd(), "dist", "public"),
+      outDir: path.resolve(import.meta.dirname, "./dist/public"),
       emptyOutDir: true,
     },
     server: {

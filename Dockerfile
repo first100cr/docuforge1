@@ -1,38 +1,36 @@
-# Stage 1: Build the frontend
-FROM node:18 AS frontend-builder
- 
-WORKDIR /app/client
- 
-COPY client/package*.json ./
-RUN npm install
- 
-COPY client ./
+FROM node:20-bullseye-slim
+
+# create non-root user for safety
+RUN groupadd -r appgroup && useradd -r -g appgroup -m arbaz
+
+WORKDIR /usr/src/app
+
+# copy package files first for caching
+COPY package*.json .
+
+
+# install all dependencies (dev + prod) required for build
+RUN npm ci
+
+# copy source files
+COPY . .
+
+# ensure server tsconfig exists (you already created it)
+# run the build (vite + tsc). This must produce dist/server/index.js
 RUN npm run build
- 
-# Stage 2: Build the backend
-FROM node:18 AS backend
- 
-WORKDIR /app
- 
-# Copy backend files
-COPY package*.json ./
-COPY tsconfig.json ./
-COPY tailwind.config.ts ./
-COPY drizzle.config.ts ./
-COPY replit.md ./
-COPY .gitignore ./
-COPY server ./server
-COPY shared ./shared
-COPY node_modules ./node_modules
- 
-# Copy frontend build from previous stage
-COPY --from=frontend-builder /app/client/dist ./client/dist
- 
-# Install backend dependencies
-RUN npm install
- 
-# Expose backend port
-EXPOSE 3500
- 
-# Start the backend
-CMD ["npm", "start"]
+
+RUN ls -R dist
+
+# make sure files are accessible by non-root user
+RUN chown -R arbaz:appgroup /usr/src/app
+
+# switch to non-root user
+USER arbaz
+
+# expose port
+ENV NODE_ENV=production
+ENV PORT=9005
+EXPOSE 9005
+
+# start the compiled server (adjust path if your entry is different)
+CMD ["node", "./dist/server/index.js"]

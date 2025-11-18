@@ -58,7 +58,7 @@ export default async function setupVite(app, server) {
 }
 
 export function serveStatic(app) {
-  const distPath = path.resolve(process.cwd(), "dist", "public");
+  const distPath = path.resolve(import.meta.dirname, "../public");
   if (!fs.existsSync(distPath)) {
     throw new Error(`Could not find the build directory: ${distPath}, make sure to build the client first`);
   }
