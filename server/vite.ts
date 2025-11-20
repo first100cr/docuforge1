@@ -1,15 +1,15 @@
-// server/vite.js
 import fs from "fs";
 import path from "path";
 import { createServer as createViteServer, createLogger } from "vite";
 import { nanoid } from "nanoid";
-import { cartographer, devBanner } from "@replit/vite-plugin-cartographer"; // optional; plugin usage depends on env
-
+import express from "express";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 import viteConfigDefault from "../vite.config.js";
 
 const viteLogger = createLogger();
 
-function log(message, source = "express") {
+function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -19,11 +19,10 @@ function log(message, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
-export default async function setupVite(app, server) {
+export default async function setupVite(app: any, server: any) {
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
-    allowedHosts: true,
   };
 
   const vite = await createViteServer({
@@ -31,7 +30,7 @@ export default async function setupVite(app, server) {
     configFile: false,
     customLogger: {
       ...viteLogger,
-      error: (msg, options) => {
+      error: (msg: string, options?: any) => {
         viteLogger.error(msg, options);
         process.exit(1);
       },
@@ -42,7 +41,7 @@ export default async function setupVite(app, server) {
 
   app.use(vite.middlewares);
 
-  app.use("*", async (req, res, next) => {
+  app.use("*", async (req: any, res: any, next: any) => {
     const url = req.originalUrl;
     try {
       const clientTemplate = path.resolve(process.cwd(), "client", "index.html");
@@ -51,19 +50,24 @@ export default async function setupVite(app, server) {
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
-      vite.ssrFixStacktrace(e);
+      vite.ssrFixStacktrace(e as Error);
       next(e);
     }
   });
 }
 
-export function serveStatic(app) {
-  const distPath = path.resolve(import.meta.dirname, "../public");
+export function serveStatic(app: any) {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const distPath = path.resolve(__dirname, "../public");
+  
   if (!fs.existsSync(distPath)) {
     throw new Error(`Could not find the build directory: ${distPath}, make sure to build the client first`);
   }
-  app.use(require("express").static(distPath));
-  app.use("*", (_req, res) => {
+  
+  app.use(express.static(distPath));
+  app.use("*", (_req: any, res: any) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
+

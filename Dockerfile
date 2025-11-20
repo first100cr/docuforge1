@@ -10,7 +10,7 @@ COPY package*.json .
 
 
 # install all dependencies (dev + prod) required for build
-RUN npm ci
+RUN npm install --verbose
 
 # copy source files
 COPY . .
